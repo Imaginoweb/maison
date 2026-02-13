@@ -250,7 +250,7 @@
 
     <div class="ai-badge"><span>✦ Formulaire généré par IA</span></div>
 
-    <form action="#" method="post" onsubmit="return false;">
+    <form id="mdm-form" action="#" method="post" onsubmit="return false;">
 
         <!-- Informations -->
         <div class="form-section">
@@ -399,5 +399,102 @@
         <p style="margin-top:10px;">© Maisons du Monde</p>
     </div>
 </div>
+
+<script>
+(function() {
+    const API_URL = 'https://francois-sandbox.saas.imagino.com/ucdapi/API_CAMPAGNE_MDM/1/UCR_MDM_France';
+    const API_KEY = '0cfe1225-a2f7-43b9-9645-caebdaf5a971';
+
+    const form = document.getElementById('mdm-form');
+    const submitBtn = form.querySelector('.btn-primary');
+
+    submitBtn.addEventListener('click', async function(e) {
+        e.preventDefault();
+
+        // Récupérer les valeurs du formulaire
+        const email = document.getElementById('email').value;
+        const firstName = document.getElementById('firstname').value;
+        const piece = document.getElementById('piece').value;
+        const budget = document.getElementById('budget').value;
+        const style = document.querySelector('input[name="style"]:checked')?.value || '';
+        const timing = document.querySelector('input[name="timing"]:checked')?.value || '';
+
+        // Opt-ins canaux
+        const channels = Array.from(document.querySelectorAll('input[name="channels[]"]:checked')).map(c => c.value);
+        const optInEmail = channels.includes('email');
+        const optInSMS = channels.includes('sms');
+        const optInWhatsApp = channels.includes('whatsapp');
+
+        // Construire le payload API
+        const payload = {
+            email: email,
+            firstName: firstName,
+            language: 'fr',
+            country: 'FR',
+            origin: 'formulaire_preferences_deco',
+            optInEmail: optInEmail,
+            optInSMS: optInSMS,
+            optInWhatsApp: optInWhatsApp
+        };
+
+        // Feedback visuel
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'ENVOI EN COURS...';
+        submitBtn.style.opacity = '0.7';
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': API_KEY
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('[MDM API] ✅ Profil créé/mis à jour:', data);
+
+                submitBtn.textContent = '✓ PRÉFÉRENCES ENREGISTRÉES';
+                submitBtn.style.backgroundColor = '#2e7d32';
+                submitBtn.style.opacity = '1';
+
+                setTimeout(() => {
+                    submitBtn.textContent = originalText;
+                    submitBtn.style.backgroundColor = '#3c3c3b';
+                    submitBtn.disabled = false;
+                }, 3000);
+            } else {
+                const errText = await response.text();
+                console.error('[MDM API] ❌ Erreur:', response.status, errText);
+
+                submitBtn.textContent = '✗ ERREUR – RÉESSAYER';
+                submitBtn.style.backgroundColor = '#c62828';
+                submitBtn.style.opacity = '1';
+
+                setTimeout(() => {
+                    submitBtn.textContent = originalText;
+                    submitBtn.style.backgroundColor = '#3c3c3b';
+                    submitBtn.disabled = false;
+                }, 3000);
+            }
+        } catch (err) {
+            console.error('[MDM API] ❌ Erreur réseau:', err);
+
+            submitBtn.textContent = '✗ ERREUR RÉSEAU';
+            submitBtn.style.backgroundColor = '#c62828';
+            submitBtn.style.opacity = '1';
+
+            setTimeout(() => {
+                submitBtn.textContent = originalText;
+                submitBtn.style.backgroundColor = '#3c3c3b';
+                submitBtn.disabled = false;
+            }, 3000);
+        }
+    });
+})();
+</script>
 </body>
 </html>
